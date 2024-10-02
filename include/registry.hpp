@@ -116,7 +116,7 @@ namespace mozaic
 		}
 		Handle handle = _current++;
 		_data.emplace(handle, std::move(element));
-		lookup[constructor] = handle;
+		lookup.emplace(constructor, handle);
 		return handle;
 	}
 	template<typename Element, typename Handle, typename ...Constructors>
@@ -137,7 +137,7 @@ namespace mozaic
 			throw registry::full_error();
 		Handle handle = _current++;
 		_data.emplace(handle, std::move(element));
-		lookup[std::move(constructor)] = handle;
+		lookup.emplace(std::move(constructor), handle);
 		return handle;
 	}
 }

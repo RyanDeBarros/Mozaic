@@ -138,6 +138,9 @@
     <ClCompile Include="examples\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\array.hpp" />
+    <ClInclude Include="include\buffers.hpp" />
+    <ClInclude Include="include\copy_ptr.hpp" />
     <ClInclude Include="include\functor.hpp" />
     <ClInclude Include="include\registry.hpp" />
     <ClInclude Include="include\utf.hpp" />
