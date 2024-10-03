@@ -40,56 +40,57 @@ namespace mozaic
 		const T& operator*() const { return *_ptr; }
 		T* operator->() { return _ptr; }
 		const T* operator->() const { return _ptr; }
+		operator bool() const { return static_cast<bool>(_ptr); }
 		T* get() { return _ptr; }
 		const T* get() const { return _ptr; }
 	};
 	template<typename T>
 	template<typename U>
-	copy_ptr<T>::copy_ptr(U* raw_heap_ptr) : _ptr(raw_heap_ptr)
+	inline copy_ptr<T>::copy_ptr(U* raw_heap_ptr) : _ptr(raw_heap_ptr)
 	{
 		static_assert(std::is_base_of_v<T, U>, "copy_ptr can only be initialized with polymorphic subtype.");
 	}
 	template<typename T>
 	template<typename U, typename>
-	copy_ptr<T>::copy_ptr(const U& obj) : _ptr(new U(obj))
+	inline copy_ptr<T>::copy_ptr(const U& obj) : _ptr(new U(obj))
 	{
 		static_assert(std::is_base_of_v<T, U>, "copy_ptr can only be initialized with polymorphic subtype.");
 	}
 	template<typename T>
 	template<typename U, typename>
-	copy_ptr<T>::copy_ptr(U&& obj) noexcept : _ptr(new U(std::move(obj)))
+	inline copy_ptr<T>::copy_ptr(U&& obj) noexcept : _ptr(new U(std::move(obj)))
 	{
 		static_assert(std::is_base_of_v<T, U>, "copy_ptr can only be initialized with polymorphic subtype.");
 	}
 	template<typename T>
-	copy_ptr<T>::copy_ptr(const copy_ptr<T>& other) : _ptr(new T(*other._ptr))
+	inline copy_ptr<T>::copy_ptr(const copy_ptr<T>& other) : _ptr(new T(*other._ptr))
 	{
 	}
 	template<typename T>
-	copy_ptr<T>::copy_ptr(copy_ptr<T>&& other) noexcept : _ptr(other._ptr)
+	inline copy_ptr<T>::copy_ptr(copy_ptr<T>&& other) noexcept : _ptr(other._ptr)
 	{
 		other._ptr = nullptr;
 	}
 	template<typename T>
 	template<typename U>
-	copy_ptr<T>::copy_ptr(const copy_ptr<U>&other) : _ptr(new U(*other._ptr))
+	inline copy_ptr<T>::copy_ptr(const copy_ptr<U>&other) : _ptr(new U(*other._ptr))
 	{
 		static_assert(std::is_base_of_v<T, U>, "copy_ptr can only be initialized with polymorphic subtype.");
 	}
 	template<typename T>
 	template<typename U>
-	copy_ptr<T>::copy_ptr(copy_ptr<U>&& other) noexcept : _ptr(other._ptr)
+	inline copy_ptr<T>::copy_ptr(copy_ptr<U>&& other) noexcept : _ptr(other._ptr)
 	{
 		static_assert(std::is_base_of_v<T, U>, "copy_ptr can only be initialized with polymorphic subtype.");
 		other._ptr = nullptr;
 	}
 	template<typename T>
 	template<typename... Args>
-	copy_ptr<T>::copy_ptr(Args&&... args) : _ptr(new T(std::forward<Args>(args)...))
+	inline copy_ptr<T>::copy_ptr(Args&&... args) : _ptr(new T(std::forward<Args>(args)...))
 	{
 	}
 	template<typename T>
-	copy_ptr<T>& copy_ptr<T>::operator=(const copy_ptr<T>& other)
+	inline copy_ptr<T>& copy_ptr<T>::operator=(const copy_ptr<T>& other)
 	{
 		if (_ptr != other._ptr)
 		{
@@ -104,7 +105,7 @@ namespace mozaic
 		return *this;
 	}
 	template<typename T>
-	copy_ptr<T>& copy_ptr<T>::operator=(copy_ptr<T>&& other) noexcept
+	inline copy_ptr<T>& copy_ptr<T>::operator=(copy_ptr<T>&& other) noexcept
 	{
 		if (_ptr != other._ptr)
 		{
@@ -116,7 +117,7 @@ namespace mozaic
 	}
 	template<typename T>
 	template<typename U>
-	copy_ptr<T>& copy_ptr<T>::operator=(const copy_ptr<U>& other)
+	inline copy_ptr<T>& copy_ptr<T>::operator=(const copy_ptr<U>& other)
 	{
 		static_assert(std::is_base_of_v<T, U>, "copy_ptr can only be assigned with polymorphic subtype.");
 		if (_ptr != other._ptr)
@@ -133,7 +134,7 @@ namespace mozaic
 	}
 	template<typename T>
 	template<typename U>
-	copy_ptr<T>& copy_ptr<T>::operator=(copy_ptr<U>&& other) noexcept
+	inline copy_ptr<T>& copy_ptr<T>::operator=(copy_ptr<U>&& other) noexcept
 	{
 		static_assert(std::is_base_of_v<T, U>, "copy_ptr can only be assigned with polymorphic subtype.");
 		if (_ptr != other._ptr)
