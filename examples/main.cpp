@@ -1,4 +1,5 @@
 #include "include/registry.hpp"
+#include "include/copy_ptr.hpp"
 
 #include <iostream>
 
@@ -30,13 +31,23 @@ struct std::hash<Constructor2>
 
 struct MyStruct
 {
-	float x;
-	bool y;
+	float x = -1.0f;
+	bool y = false;
 
+	MyStruct(float x, bool y) : x(x), y(y) {}
 	MyStruct(const Constructor1& c1) : x(c1.x), y(false) {}
 	MyStruct(const Constructor2& c2) : x(-1.0f), y(c2.y) {}
 
-	void print() const { std::cout << "x=" << x << ", y=" << (y ? "true" : "false") << std::endl; }
+	virtual void print() const { std::cout << "x=" << x << ", y=" << (y ? "true" : "false") << std::endl; }
+};
+
+struct MyChild : public MyStruct
+{
+	std::string s;
+
+	MyChild(float x, bool y, std::string s) : MyStruct(x, y), s(s) {}
+
+	virtual void print() const override { std::cout << "x=" << x << ", y=" << (y ? "true" : "false") << ", s=\"" << s << "\"" << std::endl; }
 };
 
 int main()
@@ -50,6 +61,17 @@ int main()
 
 	reg.get(h1)->print();
 	reg.get(h2)->print();
+
+	mozaic::copy_ptr<MyChild> p1(new MyChild(1.0f, true, "hi"));
+	p1->print();
+	mozaic::copy_ptr<MyStruct> p2;
+	p2 = p1;
+	p1->x = 3.0f;
+	p1->print();
+	p2->print();
+
+	const mozaic::copy_ptr<MyStruct> p3(4.0f, false);
+	p3->print();
 	
 	std::cin.get();
 	return 0;

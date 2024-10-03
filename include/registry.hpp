@@ -46,7 +46,7 @@ namespace mozaic
 		registry(registry<Element, Handle, Constructors...>&&) = default;
 		~registry() = default;
 
-		Element const* get(Handle handle) const;
+		const Element* get(Handle handle) const;
 		Element* get(Handle handle);
 		bool destroy(Handle handle);
 		Handle add(Element&& element);
@@ -61,7 +61,7 @@ namespace mozaic
 		};
 	};
 	template<typename Element, typename Handle, typename ...Constructors>
-	inline Element const* registry<Element, Handle, Constructors...>::get(Handle handle) const
+	inline const Element* registry<Element, Handle, Constructors...>::get(Handle handle) const
 	{
 		if (handle == Handle(0)) return nullptr;
 		auto iter = _data.find(handle);
