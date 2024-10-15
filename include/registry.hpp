@@ -27,65 +27,88 @@ namespace mozaic
 	template<typename T>
 	static constexpr bool __reg_is_hashable_v = __reg_is_hashable<T>::value;
 
-	template<typename Element, typename Handle, typename... Constructors>
+	template<typename _Element, typename _Handle, typename... _Constructors>
 	class registry
 	{
-		static_assert(std::is_integral_v<Handle> && std::is_unsigned_v<Handle>, "Handle type must be an unsigned integral.");
-		static_assert(((__reg_is_hashable_v<Constructors> && __reg_overloads_equals_v<Constructors>) && ...), "All constructor types must be hashable - i.e., specialize std::hash and overload ==.");
-		static constexpr bool VALIDATE_CONSTRUCTION = __reg_casts_to_bool_v<Element>;
+		static_assert(std::is_integral_v<_Handle> && std::is_unsigned_v<_Handle>, "_Handle type must be an unsigned integral.");
+		static_assert(((__reg_is_hashable_v<_Constructors> && __reg_overloads_equals_v<_Constructors>) && ...), "All constructor types must be hashable - i.e., specialize std::hash and overload ==.");
+		static constexpr bool VALIDATE_CONSTRUCTION = __reg_casts_to_bool_v<_Element>;
 
+	public:
+		struct Handle
+		{
+			_Handle _v;
+			constexpr explicit Handle(_Handle v = _Handle()) : _v(v) {}
+			constexpr Handle(const Handle&) = default;
+			constexpr Handle(Handle&&) = default;
+			constexpr Handle& operator=(const Handle&) = default;
+			constexpr Handle& operator=(Handle&&) = default;
+			constexpr operator _Handle() const { return _v; }
+			constexpr bool operator==(const Handle&) const = default;
+			constexpr Handle operator++(int) { return Handle(_v++); }
+		};
+		struct HandleHash
+		{
+			size_t operator()(const Handle& handle) const
+			{
+				return std::hash<_Handle>{}(handle._v);
+			}
+		};
+
+	private:
 		Handle _current = Handle(1);
-		std::unordered_map<Handle, Element> _data;
-		std::tuple<std::unordered_map<Constructors, Handle>...> _lookups;
+		std::unordered_map<Handle, _Element, HandleHash> _data;
+		std::tuple<std::unordered_map<_Constructors, Handle>...> _lookups;
 
 	public:
 		static constexpr Handle CAP = Handle(-1);
 
 		registry() = default;
-		registry(const registry<Element, Handle, Constructors...>&) = default;
-		registry(registry<Element, Handle, Constructors...>&&) = default;
+		registry(const registry<_Element, _Handle, _Constructors...>&) = default;
+		registry(registry<_Element, _Handle, _Constructors...>&&) = default;
 		~registry() = default;
 
-		const Element* get(Handle handle) const;
-		Element* get(Handle handle);
+		const _Element* get(Handle handle) const;
+		_Element* get(Handle handle);
 		bool destroy(Handle handle);
-		Handle add(Element&& element);
-		template<typename Constructor>
-		Handle construct(const Constructor& constructor);
-		template<typename Constructor>
-		Handle construct(Constructor&& constructor);
+		Handle add(_Element&& element);
+		template<typename _Constructor>
+		Handle construct(const _Constructor& constructor);
+		template<typename _Constructor>
+		Handle construct(_Constructor&& constructor);
+		void clear();
 
 		struct full_error : public std::runtime_error
 		{
 			full_error() : std::runtime_error("Registry is full: CAP=" + std::to_string(CAP)) {}
 		};
 	};
-	template<typename Element, typename Handle, typename ...Constructors>
-	inline const Element* registry<Element, Handle, Constructors...>::get(Handle handle) const
+	template<typename _Element, typename _Handle, typename ..._Constructors>
+	inline const _Element* registry<_Element, _Handle, _Constructors...>::get(Handle handle) const
 	{
-		if (handle == Handle(0)) return nullptr;
+		if (handle == _Handle(0)) return nullptr;
 		auto iter = _data.find(handle);
 		return iter != _data.end() ? &iter->second : nullptr;
 	}
-	template<typename Element, typename Handle, typename ...Constructors>
-	inline Element* registry<Element, Handle, Constructors...>::get(Handle handle)
+	template<typename _Element, typename _Handle, typename ..._Constructors>
+	inline _Element* registry<_Element, _Handle, _Constructors...>::get(Handle handle)
 	{
-		if (handle == Handle(0)) return nullptr;
+		if (handle == _Handle(0)) return nullptr;
 		auto iter = _data.find(handle);
 		return iter != _data.end() ? &iter->second : nullptr;
 	}
-	template<typename Element, typename Handle, typename ...Constructors>
-	inline bool registry<Element, Handle, Constructors...>::destroy(Handle handle)
+	template<typename _Element, typename _Handle, typename ..._Constructors>
+	inline bool registry<_Element, _Handle, _Constructors...>::destroy(Handle handle)
 	{
-		if (handle == Handle(0)) return false;
+		if (handle == _Handle(0)) return false;
 		auto iter = _data.find(handle);
 		if (iter == _data.end())
 			return false;
 		_data.erase(iter);
 		return true;
 	}
-	template<typename Element, typename Handle, typename ...Constructors>
-	inline Handle registry<Element, Handle, Constructors...>::add(Element&& element)
+	template<typename _Element, typename _Handle, typename ..._Constructors>
+	inline registry<_Element, _Handle, _Constructors...>::Handle registry<_Element, _Handle, _Constructors...>::add(_Element&& element)
 	{
 		if (_current == CAP)
 			throw registry::full_error();
@@ -98,17 +121,17 @@ namespace mozaic
 		_data.emplace(handle, std::move(element));
 		return handle;
 	}
-	template<typename Element, typename Handle, typename ...Constructors>
-	template<typename Constructor>
-	inline Handle registry<Element, Handle, Constructors...>::construct(const Constructor& constructor)
+	template<typename _Element, typename _Handle, typename ..._Constructors>
+	template<typename _Constructor>
+	inline registry<_Element, _Handle, _Constructors...>::Handle registry<_Element, _Handle, _Constructors...>::construct(const _Constructor& constructor)
 	{
-		auto& lookup = std::get<std::unordered_map<Constructor, Handle>>(_lookups);
+		auto& lookup = std::get<std::unordered_map<_Constructor, Handle>>(_lookups);
 		auto iter = lookup.find(constructor);
 		if (iter != lookup.end())
 			return iter->second;
 		if (_current == CAP)
 			throw registry::full_error();
-		Element element(constructor);
+		_Element element(constructor);
 		if constexpr (VALIDATE_CONSTRUCTION)
 		{
 			if (!element)
@@ -119,25 +142,31 @@ namespace mozaic
 		lookup.emplace(constructor, handle);
 		return handle;
 	}
-	template<typename Element, typename Handle, typename ...Constructors>
-	template<typename Constructor>
-	inline Handle registry<Element, Handle, Constructors...>::construct(Constructor&& constructor)
+	template<typename _Element, typename _Handle, typename ..._Constructors>
+	template<typename _Constructor>
+	inline registry<_Element, _Handle, _Constructors...>::Handle registry<_Element, _Handle, _Constructors...>::construct(_Constructor&& constructor)
 	{
-		auto& lookup = std::get<std::unordered_map<Constructor, Handle>>(_lookups);
+		auto& lookup = std::get<std::unordered_map<_Constructor, Handle>>(_lookups);
 		auto iter = lookup.find(constructor);
 		if (iter != lookup.end())
 			return iter->second;
-		Element element(constructor);
+		if (_current == CAP)
+			throw registry::full_error();
+		_Element element(constructor);
 		if constexpr (VALIDATE_CONSTRUCTION)
 		{
 			if (!element)
 				return Handle(0);
 		}
-		if (_current == CAP)
-			throw registry::full_error();
 		Handle handle = _current++;
 		_data.emplace(handle, std::move(element));
 		lookup.emplace(std::move(constructor), handle);
 		return handle;
+	}
+	template<typename _Element, typename _Handle, typename ..._Constructors>
+	inline void registry<_Element, _Handle, _Constructors...>::clear()
+	{
+		std::apply([](auto&& lookup) { lookup.clear(); }, _lookups);
+		_data.clear();
 	}
 }
